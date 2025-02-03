@@ -18,7 +18,8 @@ class Controller:
         self.robot_name = robot_name
         self.viewer = viewer
 
-        mujoco_path = os.getenv('MUJOCO_PATH')
+        # mujoco_path = os.getenv('MUJOCO_PATH')
+        mujoco_path = '.' # debuging
         if not mujoco_path:
             raise EnvironmentError('The "MUJOCO_PATH" environment variable is not set.')
 
@@ -328,7 +329,7 @@ class Servo:
         if not (self.vel_limits[0] <= rpm <= self.vel_limits[1]):
             raise ValueError(f'RPM ({rpm}) out of range [{self.vel_limits}] for servo {self.servo_id}.')
         vel_units = self.FACTORY.rpm_to_vel_units(rpm)
-        self.controller.set_velocity(vel_units)
+        self.controller.set_velocity(self.servo_id, vel_units)
 
     def get_velocity(self) -> float:
         '''
@@ -352,7 +353,7 @@ class Servo:
             raise ValueError(f'Angle ({position}) out of range [{self.pos_limits}] for servo {self.servo_id}')
         factor = -1 if self.reverse else 1
         pos_units = self.FACTORY.deg_to_pos_units(factor * position)
-        self.controller.set_position(pos_units)
+        self.controller.set_position(self.servo_id, pos_units)
 
     def get_position(self) -> float:
         '''
@@ -425,7 +426,7 @@ class ReactorX200:
         Args:
             robot_name (str): Name of the robot (default is 'rx200')
         '''
-        self.robot_name = 'rx200'
+        self.robot_name = 'reactorx200'
 
         try:
             # Robot controller configuration
