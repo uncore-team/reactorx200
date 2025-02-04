@@ -32,8 +32,6 @@ if __name__ == '__main__':
         time.sleep(3)
         reactor.close_gripper()
         time.sleep(3)
-        reactor.home_joint(Joint.Gripper)
-        time.sleep(3)
 
         reactor.disable_all_joints_torques()
         reactor.close()

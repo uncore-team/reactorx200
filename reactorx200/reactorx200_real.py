@@ -46,7 +46,7 @@ class Controller:
             Exception(f'Initialization error: {str(e)}')
             raise
 
-    def _write_bytes(self, servo, command, value):
+    def _write_bytes(self, servo: int, command: list, value: int) -> int:
         '''
         Writes a byte, word or dword to the specified servo.
 
@@ -88,7 +88,7 @@ class Controller:
 
         return error
 
-    def _read_bytes(self, servo, command):
+    def _read_bytes(self, servo: int, command: list) -> int:
         '''
         Reads a byte, word or dword to the specified servo.
 
@@ -124,7 +124,7 @@ class Controller:
             raise Exception(f'Error reading the address "{address}"({name}) for ID {servo}: Bad command length.')
 
         if (result != dxl.COMM_SUCCESS): # 0, -1000, -2000, -1001, -9000, -3001, -3002
-            raise Exception(f'Error running the command "{name}"({address}) for ID {servo}: Communication error {self.handler.getTxRxResult(result)}')
+            raise Exception(f'Error running the command "{name}"({address}) for ID {servo}: Communication error\n{self.handler.getTxRxResult(result)}')
 
         if (error & errors.HARDWARE):
             print(f'Hardware error for ID {servo}: Please check error status for more info or reboot.')
@@ -141,23 +141,7 @@ class Controller:
         '''
         self.serial.closePort()
 
-    def ping(self, servo):
-        '''
-        Performs a ping to the specified servo.
-
-        Parameters:
-          servo (int): The ID of the servo to ping.
-
-        Returns:
-          value (int): The bytes read from the servo.
-          error: The error returned by the servo (e.g. hardware error)
-        '''
-        value, result, error = self.handler.ping(self.serial, servo)
-        if (result != dxl.COMM_SUCCESS): # 0, -1000, -2000, -1001, -9000, -3001, -3002
-            raise Exception(f'Error running the command "PING" for ID {servo}: Communication error {self.handler.getTxRxResult(result)}')
-        return value, error
-
-    def factory(self, servo):
+    def factory(self, servo: int):
         '''
         Performs a factory reset on the specified servo.
 
@@ -169,10 +153,12 @@ class Controller:
         '''
         result, error = self.handler.factoryReset(self.serial, servo, 2)  # Reset all except ID and Baudrate
         if (result != dxl.COMM_SUCCESS): # 0, -1000, -2000, -1001, -9000, -3001, -3002
-            raise Exception(f'Error running the command "FACTORY_RESET" for ID {servo}: Communication error {self.handler.getTxRxResult(result)}')
-        return error
+            raise Exception(f'Error running the command "FACTORY_RESET" for ID {servo}: Communication error\n{self.handler.getTxRxResult(result)}')
+        if (error != errors.NO_ERROR):
+            raise Exception(f'Error running the command "FACTORY_RESET" for ID {servo}: Communication error\n{self.handler.getRxPacketError(error)}')
+        time.sleep(2)  # Allow time for reboot
 
-    def reboot(self, servo):
+    def reboot(self, servo: int):
         '''
         Reboots the specified servo.
 
@@ -184,56 +170,12 @@ class Controller:
         '''
         result, error = self.handler.reboot(self.serial, servo)
         if (result != dxl.COMM_SUCCESS): # 0, -1000, -2000, -1001, -9000, -3001, -3002
-            raise Exception(f'Error running the command "REBOOT" for ID {servo}: Communication error {self.handler.getTxRxResult(result)}')
-        return error
+            raise Exception(f'Error running the command "REBOOT" for ID {servo}: Communication error\n{self.handler.getTxRxResult(result)}')
+        if (error != errors.NO_ERROR):
+            raise Exception(f'Error running the command "REBOOT" for ID {servo}: Communication error\n{self.handler.getRxPacketError(error)}')
+        time.sleep(2)  # Allow time for reboot
 
-    def set_position(self, servo: int, position: float):
-        '''
-        Sets the target position of the servo in position units.
-
-        Parameters:
-          position (int): Target position in degrees.
-        '''
-        error = self._write_bytes(servo, self.COMMANDS['GOAL_POSITION'], position)
-        if error:
-            raise Exception(f'Error changing the position of the servo {servo}.')
-
-    def get_position(self, servo: int) -> float:
-        '''
-        Gets the current position of the servo in degrees.
-
-        Returns:
-          float: Current position in degrees.
-        '''
-        pos_units, error = self._read_bytes(servo, self.COMMANDS['PRESENT_POSITION'])
-        if error:
-            raise Exception(f'Error getting the position of the servo {servo}.')
-        return pos_units
-
-    def set_velocity(self, servo: int, velocity: float):
-        '''
-        Sets the velocity of the servo in RPM.
-
-        Parameters:
-          velocity (float): Target velocity in RPM.
-        '''
-        error = self._write_bytes(servo, self.COMMANDS['PROFILE_VELOCITY'], velocity)
-        if error:
-            raise Exception(f'Error changing the position of the servo {servo}.')
-
-    def get_velocity(self, servo: int) -> float:
-        '''
-        Gets the current velocity of the servo in RPM.
-
-        Returns:
-          float: Current velocity in RPM.
-        '''
-        vel_units, error = self._read_bytes(servo, self.COMMANDS['PROFILE_VELOCITY'])
-        if error:
-            raise Exception(f'Error getting the velocity of the servo {servo}.')
-        return vel_units
-
-    def enable_torque(self, servo: int) -> float:
+    def enable_torque(self, servo: int):
         '''
         Enables torque on the servo, allowing it to move.
         '''
@@ -249,9 +191,73 @@ class Controller:
         if error:
             raise Exception(f'Error disabling position control for the servo {servo}.')
 
+    def is_torque_enabled(self, servo: int) -> bool:
+        '''
+        Get the status of the position control system.
+        '''
+        value, error = self._read_bytes(servo, self.COMMANDS['TORQUE_ENABLE'])
+        if error:
+            raise Exception(f'Error reading the status of the position control for the servo {servo}.')
+        return True if value else False
+
+    def set_velocity(self, servo: int, velocity: float):
+        '''
+        Sets the velocity of the servo in velocity units.
+
+        Parameters:
+        :servo (int): The servo id.
+        :velocity (float): The velocity in velocity units.
+        '''
+        error = self._write_bytes(servo, self.COMMANDS['PROFILE_VELOCITY'], int(velocity))
+        if error:
+            raise Exception(f'Error changing the position of the servo {servo}.')
+
+    def get_velocity(self, servo: int) -> float:
+        '''
+        Gets the current velocity of the servo in velocity units.
+
+        Parameters:
+        :servo (int): The servo id.
+
+        Returns:
+        :float: The servo velocity in velocity units.
+        '''
+        vel_units, error = self._read_bytes(servo, self.COMMANDS['PROFILE_VELOCITY'])
+        if error:
+            raise Exception(f'Error getting the velocity of the servo {servo}.')
+        return vel_units
+
+    def set_position(self, servo: int, position: float):
+        '''
+        Sets the target position of the servo in position units.
+
+        Parameters:
+        :servo (int): The servo id.
+        :position (float): The position in position units.
+        '''
+        error = self._write_bytes(servo, self.COMMANDS['GOAL_POSITION'], position)
+        if error:
+            raise Exception(f'Error changing the position of the servo {servo}.')
+
+    def get_position(self, servo: int) -> float:
+        '''
+        Gets the current position of the servo in position units.
+
+        Parameters:
+        :servo (int): The servo id.
+
+        Returns:
+        :float: The position in position units.
+        '''
+        pos_units, error = self._read_bytes(servo, self.COMMANDS['PRESENT_POSITION'])
+        if error:
+            raise Exception(f'Error getting the position of the servo {servo}.')
+        return pos_units
+
     def get_load(self, servo: int) -> float:
         '''
-        Get load percentage on the servo. The abs() of load is used here for the sake of simplicity.
+        Get load percentage on the servo.
+        Note: The abs() of load is used here for the sake of simplicity.
         '''
         load_units, error =  self._read_bytes(servo, self.COMMANDS['PRESENT_LOAD'])
         if error:
@@ -420,11 +426,7 @@ class Servo:
           > Reverse mode continues enabled if it was previously enabled.
           > It is convenient to check hardware error status or ping before sending new commands.
         '''
-        error = self.controller.reboot(self.servo_id)
-        if not error:
-            time.sleep(2)  # Allow time for reboot
-        else:
-            raise Exception(f'Error rebooting the servo {self.servo_id}.')
+        self.controller.reboot(self.servo_id)
 
     def factory(self):
         '''
@@ -432,11 +434,7 @@ class Servo:
           > Reverse mode is disabled.
           > It is convenient to check hardware error status or ping before sending new commands.
         '''
-        error = self.controller.factory(self.servo_id)
-        if not error:
-            time.sleep(2)  # Allow time for factory reset
-        else:
-            raise Exception(f'Error making a factory reset the servo {self.servo_id}.')
+        self.controller.factory(self.servo_id)
 
     def set_position(self, position):
         '''

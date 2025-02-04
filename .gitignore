@@ -169,3 +169,5 @@ cython_debug/
 
 # PyPI configuration file
 .pypirc
+reactorx200/cspell.json
+reactorx200/.vscode/settings.json
