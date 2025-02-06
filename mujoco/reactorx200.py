@@ -3,8 +3,10 @@ import mujoco
 import mujoco.viewer
 
 from utils import Joint
-from reactorx200_mjc import ReactorX200 as SimReactorX200
-from reactorx200_real import ReactorX200 as RealReactorX200
+from dxlcontroller import DXLController
+from mjccontroller import MJCController
+from mujocoreactorx200 import TrossenReactorX200
+from trossenreactorx200 import MuJoCoReactorX200
 
 class ExecutionType(Enum):
     Physical=0
@@ -12,32 +14,32 @@ class ExecutionType(Enum):
     DigitalTwin=2
 
 class ReactorX200:
-    def __init__(self, exec_type: ExecutionType = ExecutionType.Simulated, port:str = None):
+    def __init__(self, exec_type: ExecutionType = ExecutionType.Simulated, device_name:str = None):
         '''
         Initialize the ReactorX200 class.
 
         :param com_port: (str) COM port for the real robot. If None, the Mujoco model is used.
         '''
+        self.joints_number = 6
         self.exec_type = exec_type
-        self.port = port
+        self.device_name = device_name
 
         if self.exec_type not in ExecutionType:
             raise ValueError('Invalid port name.')
 
-        if self.exec_type in [ExecutionType.Physical, ExecutionType.DigitalTwin] and port is None:
+        if self.exec_type in [ExecutionType.Physical, ExecutionType.DigitalTwin] and device_name is None:
             raise ValueError('Invalid port name.')
 
         self.robots = [] # list of arms to manage
-        self.joints_number = 0
 
         self._start()
 
     def _start(self):
 
         if self.exec_type in [ExecutionType.Physical, ExecutionType.DigitalTwin]:
-            self.robots.append( RealReactorX200(self.port) )
+            self.robots.append( RealReactorX200(DXLController(self.device_name)) )
         if self.exec_type in [ExecutionType.Simulated, ExecutionType.DigitalTwin]:
-            self.robots.append( SimReactorX200() )
+            self.robots.append( SimReactorX200(MJCController(self.robot_name)) )
 
         self.joints_number = self.robots[0].get_joints_number()
         if len(self.robots) == 2:
