@@ -5,7 +5,7 @@ import os
 import time
 import threading
 
-class MJCController:
+class MuJoCoController:
     def __init__(self, robot_name: str='reactorx200', show_viewer = True):
         '''
         Initializes a servo controller instance.
@@ -150,29 +150,26 @@ class MJCController:
         with self.lock:
             self.torque_enabled[servo] = False
 
-    def enable_torque(self, servo: int):
+    def set_torque(self, servo: int, value: bool):
         '''
-        Enables torque on the servo, allowing it to move.
-        '''
-        with self.lock:
-            self.torque_enabled[servo] = True
-            self.target_position[servo] = self.data.qpos[servo]
-
-    def disable_torque(self, servo: int):
-        '''
-        Disables torque on the servo, allowing free movement.
+        Enables/disables the position control of the servo, allowing it to move or not.
         '''
         with self.lock:
-            self.torque_enabled[servo] = False
+            self.torque_enabled[servo] = value
+            # if value:
+            #     self.target_position[servo] = self.data.qpos[servo]
 
-    def is_torque_enabled(self, servo: int) -> bool:
+    def get_torque(self, servo: int) -> bool:
         '''
-        Get the status of the position control system.
+        Get the position control status of the servo.
+
+        Parameters:
+        :servo (int): The servo id.
         '''
         with self.lock:
             return self.torque_enabled[servo]
 
-    def get_torque(self, servo: int) -> float:
+    def get_force(self, servo: int) -> float:
         '''
         Gets the torque/force of a servo in torque units (N/m or N).
 

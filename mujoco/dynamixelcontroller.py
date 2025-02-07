@@ -3,7 +3,7 @@ import dynamixel_sdk as dxl
 import errors
 import time
 
-class DXLController(Controller):
+class DynamixelController(Controller):
     def __init__(self, device_name: str, baud_rate: int = 1000000, protocol: int = 2):
         '''
         Initializes a DXLController instance.
@@ -51,7 +51,7 @@ class DXLController(Controller):
             for servo in range(1, 8): # from 1 to 8
                 print(f'\tping to ID {servo}')
                 _, result, error = self.handler.ping(self.serial, servo)
-                if result == dxl.COMM_SUCCESS:
+                if result != dxl.COMM_SUCCESS:
                     print(f"Error on ID {servo}: {self.handler.getTxRxResult(result)}")
 
                 if (error & errors.HARDWARE):
@@ -195,23 +195,15 @@ class DXLController(Controller):
             raise Exception(f'Error running the command "REBOOT" for ID {servo}: Communication error\n{self.handler.getRxPacketError(error)}')
         time.sleep(2)  # Allow time for reboot
 
-    def enable_torque(self, servo: int):
+    def set_torque(self, servo:int, value:bool):
         '''
         Enables torque on the servo, allowing it to move.
         '''
-        error = self._write_bytes(servo, self.COMMANDS['TORQUE_ENABLE'], 1)
+        error = self._write_bytes(servo, self.COMMANDS['TORQUE_ENABLE'], 1 if value else 0)
         if error:
             raise Exception(f'Error enabling position control for the servo {servo}.')
 
-    def disable_torque(self, servo: int):
-        '''
-        Disables torque on the servo, allowing free movement.
-        '''
-        error = self._write_bytes(servo, self.COMMANDS['TORQUE_ENABLE'], 0)
-        if error:
-            raise Exception(f'Error disabling position control for the servo {servo}.')
-
-    def is_torque_enabled(self, servo: int) -> bool:
+    def get_torque(self, servo:int) -> bool:
         '''
         Get the status of the position control system.
         '''
@@ -220,11 +212,36 @@ class DXLController(Controller):
             raise Exception(f'Error reading the status of the position control for the servo {servo}.')
         return True if value else False
 
-    def get_torque(self, servo: int) -> float:
+    # def enable_torque(self, servo: int):
+    #     '''
+    #     Enables torque on the servo, allowing it to move.
+    #     '''
+    #     error = self._write_bytes(servo, self.COMMANDS['TORQUE_ENABLE'], 1)
+    #     if error:
+    #         raise Exception(f'Error enabling position control for the servo {servo}.')
+
+    # def disable_torque(self, servo: int):
+    #     '''
+    #     Disables torque on the servo, allowing free movement.
+    #     '''
+    #     error = self._write_bytes(servo, self.COMMANDS['TORQUE_ENABLE'], 0)
+    #     if error:
+    #         raise Exception(f'Error disabling position control for the servo {servo}.')
+
+    # def is_torque_enabled(self, servo: int) -> bool:
+    #     '''
+    #     Get the status of the position control system.
+    #     '''
+    #     value, error = self._read_bytes(servo, self.COMMANDS['TORQUE_ENABLE'])
+    #     if error:
+    #         raise Exception(f'Error reading the status of the position control for the servo {servo}.')
+    #     return True if value else False
+
+    def get_force(self, servo: int) -> float:
         '''
         Gets load percentage on the servo.
         '''
-        tor_units, error =  self._read_bytes(servo, self.COMMANDS['PRESENT_LOAD'])
+        tor_units, error = self._read_bytes(servo, self.COMMANDS['PRESENT_LOAD'])
         if error:
             raise Exception(f'Error getting the load rate of the servo {servo}.')
         if ((tor_units >> 15) & 1): # 2-complement?

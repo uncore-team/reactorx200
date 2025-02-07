@@ -1,12 +1,8 @@
 from enum import Enum
-import mujoco
-import mujoco.viewer
 
-from utils import Joint
-from dxlcontroller import DXLController
-from mjccontroller import MJCController
-from mujocoreactorx200 import TrossenReactorX200
-from trossenreactorx200 import MuJoCoReactorX200
+from manipulatorarm import Joint
+from mujocoreactorx200 import MuJoCoReactorX200
+from trossenreactorx200 import TrossenReactorX200
 
 class ExecutionType(Enum):
     Physical=0
@@ -14,13 +10,13 @@ class ExecutionType(Enum):
     DigitalTwin=2
 
 class ReactorX200:
-    def __init__(self, exec_type: ExecutionType = ExecutionType.Simulated, device_name:str = None):
+    def __init__(self, exec_type:ExecutionType=ExecutionType.Simulated, device_name:str=None):
         '''
         Initialize the ReactorX200 class.
 
         :param com_port: (str) COM port for the real robot. If None, the Mujoco model is used.
         '''
-        self.joints_number = 6
+        self.joints_number = 6  # Waist, Shoulder, Elbow, WristAngle, WristRotation, Gripper
         self.exec_type = exec_type
         self.device_name = device_name
 
@@ -37,35 +33,29 @@ class ReactorX200:
     def _start(self):
 
         if self.exec_type in [ExecutionType.Physical, ExecutionType.DigitalTwin]:
-            self.robots.append( RealReactorX200(DXLController(self.device_name)) )
+            self.robots.append(TrossenReactorX200(self.device_name))
         if self.exec_type in [ExecutionType.Simulated, ExecutionType.DigitalTwin]:
-            self.robots.append( SimReactorX200(MJCController(self.robot_name)) )
-
-        self.joints_number = self.robots[0].get_joints_number()
-        if len(self.robots) == 2:
-            if self.joints_number != self.robots[1].get_joints_number():
-                raise Exception(f'The number of joints of the simulated and physical arms are different!.')
+            self.robots.append(MuJoCoReactorX200())
 
     def close(self):
         for robot in self.robots:
             robot.close()
 
-    def home_joint(self, joint: Joint):
+    def move_joint_to_home(self, joint: Joint):
         '''
         Moves a joint to its home (default) position.
         '''
-        if Joint.is_valid(joint):
-            for robot in self.robots:
-                robot.home_joint(joint)
-        else:
+        if not joint in Joint:
             raise ValueError('Invalid joint ID')
+        for robot in self.robots:
+            robot.move_joint_to_home(joint)
 
-    def home_all_joints(self):
+    def move_joints_to_home(self):
         '''
         Moves all joints to their home (default) positions.
         '''
         for robot in self.robots:
-            robot.home_all_joints()
+            robot.move_joints_to_home()
 
     def enable_joint_torque(self, joint: Joint):
         '''
@@ -73,37 +63,70 @@ class ReactorX200:
 
         :param joint (Joint): List of torques to apply to each joint.
         '''
-        if Joint.is_valid(joint):
-            for robot in self.robots:
-                robot.enable_joint_torque(joint)
-        else:
+        if joint not in Joint:
             raise ValueError('Invalid joint ID')
+        for robot in self.robots:
+            robot.enable_joint_torque(joint)
 
-    def enable_all_joints_torques(self):
+    def enable_joints_torques(self):
         '''
         Enables position control for all joints.
         '''
         for robot in self.robots:
-            robot.enable_all_joints_torques()
+            robot.enable_joints_torques()
 
     def disable_joint_torque(self, joint: Joint):
         '''
         Disables position control for the servo.
         '''
-        if Joint.is_valid(joint):
-            for robot in self.robots:
-                robot.disable_joint_torque(joint)
-        else:
+        if joint not in Joint:
             raise ValueError('Invalid joint ID')
+        for robot in self.robots:
+            robot.disable_joint_torque(joint)
 
-    def disable_all_joints_torques(self):
+    def disable_joints_torques(self):
         '''
         Disables position control for all joints.
         '''
         for robot in self.robots:
-            robot.disable_all_joints_torques()
+            robot.disable_joints_torques()
 
-    def get_joint_torque(self, joint: Joint) -> float:
+    def set_joint_torque(self, joint: Joint, value: bool):
+        '''
+        Enables position control for the servo.
+        '''
+        if joint not in Joint:
+            raise ValueError('Invalid joint ID')
+        for robot in self.robots:
+            robot.set_joint_torque(joint, value)
+
+    def set_joints_torques(self, values: list[bool]):
+        '''
+        Enables position control for the servo.
+        '''
+        if len(values) != self.joints_number:
+            raise ValueError('Number of velocities must match the number of joints.')
+        for robot in self.robots:
+            robot.set_joints_torques(values)
+
+    def get_joint_torque(self, joint: Joint) -> bool:
+        '''
+        Enables/disables position control for the servo.
+        '''
+        if joint not in Joint:
+            raise ValueError('Invalid joint ID')
+        return self.robots[0].get_joint_torque(joint) # first robot
+
+    def get_joints_torques(self) -> list[bool]:
+        '''
+        Gets the current torques/forces percent of all servos.
+
+        Returns:
+            list: A list of current torques/forces for all joints.
+        '''
+        return self.robots[0].get_joints_torques() # first robot
+
+    def get_joint_force(self, joint: Joint) -> float:
         '''
         Gets the current torque/force percent of the joint.
 
@@ -113,19 +136,18 @@ class ReactorX200:
         Returns:
         :float: The current torque percent.
         '''
-        if Joint.is_valid(joint):
-            return self.robots[0].get_joint_torque(joint) # first robot (physical, typically)
-        else:
+        if joint not in Joint:
             raise ValueError('Invalid joint ID')
+        return self.robots[0].get_joint_force(joint) # first robot
 
-    def get_all_joints_torques(self) -> list:
+    def get_joints_forces(self) -> list[float]:
         '''
         Gets the current torques/forces percent of all servos.
 
         Returns:
             list: A list of current torques/forces for all joints.
         '''
-        return self.robots[0].get_all_joints_torques()  # first robot
+        return self.robots[0].get_joints_forces()  # first robot
 
     def set_joint_velocity(self, joint: Joint, rpm: float):
         '''
@@ -136,13 +158,12 @@ class ReactorX200:
             joint (Joint): Joint to control (e.g., Shoulder, Elbow).
             rpm (float): Velocity in RPM (0-100).
         '''
-        if Joint.is_valid(joint):
-            for robot in self.robots:
-                robot.set_joint_velocity(joint, rpm)
-        else:
+        if joint not in Joint:
             raise ValueError('Invalid joint ID')
+        for robot in self.robots:
+            robot.set_joint_velocity(joint, rpm)
 
-    def set_all_joints_velocities(self, velocities: list):
+    def set_joints_velocities(self, velocities:list[float]):
         '''
         Sets the maximum velocities for all servos in RPM.
         This limits the rate of change of the target positions for all joints.
@@ -152,9 +173,8 @@ class ReactorX200:
         '''
         if len(velocities) != self.joints_number:
             raise ValueError('Number of velocities must match the number of joints.')
-
         for robot in self.robots:
-            robot.set_all_joints_velocities(velocities)
+            robot.set_joints_velocities(velocities)
 
     def get_joint_velocity(self, joint: Joint) -> float:
         '''
@@ -166,35 +186,34 @@ class ReactorX200:
         Returns:
             float: The current velocity in RPM.
         '''
-        if Joint.is_valid(joint):
-            return self.robots[0].get_joint_velocity(joint)
-        else:
+        if joint not in Joint:
             raise ValueError('Invalid joint ID')
+        return self.robots[0].get_joint_velocity(joint)  # first robot
 
-    def get_all_joint_velocities(self) -> list:
+    def get_joints_velocities(self) -> list[float]:
         '''
         Gets the current velocities of all servos in RPM.
 
         Returns:
             list: A list of current velocities in RPM for all joints.
         '''
-        return self.robots[0].get_all_joints_velocities()
+        return self.robots[0].get_joints_velocities()  # first robot
 
     def open_gripper(self):
         '''
-        Opens the gripper by moving it to its home position.
+        Opens the gripper by moving it to its maximum position.
         '''
         for robot in self.robots:
             robot.open_gripper()
 
     def close_gripper(self):
         '''
-        Closes the gripper by moving it to its home position.
+        Closes the gripper by moving it to its minimum position.
         '''
         for robot in self.robots:
             robot.close_gripper()
 
-    def set_joint_position(self, joint: Joint, position: float):
+    def set_joint_position(self, joint:Joint, position:float):
         '''
         Sets the target position of a specific joint (in degrees).
 
@@ -202,13 +221,12 @@ class ReactorX200:
         servo (int): Joint to move.
         position (float): The desired position in degrees.
         '''
-        if Joint.is_valid(joint):
-            for robot in self.robots:
-                robot.set_joint_position(joint, position)
-        else:
+        if joint not in Joint:
             raise ValueError('Invalid joint ID')
+        for robot in self.robots:
+            robot.set_joint_position(joint, position)
 
-    def set_all_joint_positions(self, positions):
+    def set_joints_positions(self, positions:list[float]):
         '''
         Sets positions for all joints (in degrees).
 
@@ -219,9 +237,9 @@ class ReactorX200:
             raise ValueError('Number of positions must match the number of joints.')
 
         for robot in self.robots:
-            robot.set_all_joints_positions(positions)
+            robot.set_joints_positions(positions)
 
-    def get_joint_position(self, joint: Joint) -> float:
+    def get_joint_position(self, joint:Joint) -> float:
         '''
         Gets the current position of a specific joint (in degrees).
 
@@ -231,16 +249,15 @@ class ReactorX200:
         Returns:
         float: The current position of the joint in degrees.
         '''
-        if Joint.is_valid(joint):
-            return self.robots[0].get_joint_position(joint)
-        else:
+        if joint not in Joint:
             raise ValueError('Invalid joint ID')
+        return self.robots[0].get_joint_position(joint)  # first robot
 
-    def get_all_joint_positions(self):
+    def get_joints_positions(self) -> list[float]:
         '''
         Gets the current positions of all joints (in degrees).
 
         Returns:
         list: A list of current positions in degrees for all joints.
         '''
-        return self.robot[0].get_all_joints_positions()
+        return self.robot[0].get_joints_positions()  # first robot

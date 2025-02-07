@@ -28,19 +28,15 @@ class Controller(ABC):
         pass
 
     @abstractmethod
-    def enable_torque(self, servo: int):
+    def set_torque(self, servo: int, value: bool):
         pass
 
     @abstractmethod
-    def disable_torque(self, servo: int):
+    def get_torque(self, servo: int) -> bool:
         pass
 
     @abstractmethod
-    def is_torque_enabled(self, servo: int) -> bool:
-        pass
-
-    @abstractmethod
-    def get_torque(self, servo: int) -> float:
+    def get_force(self, servo: int) -> float:
         pass
 
     @abstractmethod
