@@ -89,35 +89,35 @@
 
       <body name="rx200/shoulder_link" pos="0 0 0.06566">
         <inertial pos="-8.53644e-05 1.7369e-05 0.0132005" quat="0.00551577 0.707173 0.0055144 0.706997" mass="0.257774" diaginertia="0.000471107 0.000442793 0.0002663"/>
-        <site name="waist_site" pos="0 0 0" size="0.02" rgba="1 0 0 1"/>
+        <site name="waist_site" pos="0 0 0" size="0.001" rgba="1 0 0 1"/>
         <joint name="waist" class="waist"/>
         <geom pos="0 0 0.0015" quat="0.707107 0 0 -0.707107" mesh="rx200_2_shoulder" class="visual"/>
         <geom pos="0 0 0.0015" quat="0.707107 0 0 -0.707107" mesh="rx200_2_shoulder" class="collision"/>
         
         <body name="rx200/upper_arm_link" pos="0 0 0.03891">
           <inertial pos="0.0119513 -0.000116923 0.13943" quat="0.997528 0.0699303 -0.000209782 -0.00692919" mass="0.297782" diaginertia="0.00171001 0.00166103 0.000117759"/>
-          <site name="shoulder_site" pos="0 0 0" size="0.02" rgba="0 1 0 1"/>
+          <site name="shoulder_site" pos="0 0 0" size="0.001" rgba="0 1 0 1"/>
           <joint name="shoulder" class="shoulder"/>
           <geom quat="0.707107 0 0 0.707107" mesh="rx200_3_upper_arm" class="visual"/>
           <geom quat="0.707107 0 0 0.707107" mesh="rx200_3_upper_arm" class="collision"/>
           
           <body name="rx200/forearm_link" pos="0.05 0 0.2">
             <inertial pos="0.114745 -9.38376e-05 0" quat="0.500461 0.499538 -0.500461 0.499538" mass="0.258863" diaginertia="0.001076 0.001055 6.42066e-05"/>
-            <site name="elbow_site" pos="0 0 0" size="0.02" rgba="0 0 1 1"/>
+            <site name="elbow_site" pos="0 0 0" size="0.001" rgba="0 0 1 1"/>
             <joint name="elbow" class="elbow"/>
             <geom quat="0.707107 0 0 0.707107" mesh="rx200_4_forearm" class="visual"/>
             <geom quat="0.707107 0 0 0.707107" mesh="rx200_4_forearm" class="collision"/>
 
             <body name="rx200/wrist_link" pos="0.2 0 0">
               <inertial pos="0.04236 -1.0411e-05 0.010577" quat="0.608721 0.363497 -0.359175 0.606895" mass="0.084957" diaginertia="3.29057e-05 3.082e-05 2.68343e-05"/>
-              <site name="wrist_angle_site" pos="0 0 0" size="0.02" rgba="1 1 0 1"/>
+              <site name="wrist_angle_site" pos="0 0 0" size="0.001" rgba="1 1 0 1"/>
               <joint name="wrist_angle" class="wrist_angle"/>
               <geom quat="0.707107 0 0 0.707107" mesh="rx200_5_wrist" class="visual"/>
               <geom quat="0.707107 0 0 0.707107" mesh="rx200_5_wrist" class="collision"/>
 
               <body name="rx200/gripper_link" pos="0.065 0 0">
                 <inertial pos="0.02163 0 0.01141" quat="0.992449 0.12266 0 0" mass="0.072885" diaginertia="2.537e-05 1.84689e-05 1.66311e-05"/>
-                <site name="wrist_rotate_site" pos="0 0 0" size="0.02" rgba="1 0 1 1"/>
+                <site name="wrist_rotate_site" pos="0 0 0" size="0.001" rgba="1 0 1 1"/>
                 <joint name="wrist_rotate" class="wrist_rotate"/>
                 <geom pos="-0.02 0 0" quat="0.707107 0 0 0.707107" mesh="rx200_6_gripper" class="visual"/>
                 <geom pos="-0.02 0 0" quat="0.707107 0 0 0.707107" mesh="rx200_6_gripper" class="collision"/>
@@ -143,7 +143,7 @@
 
                       <body name="rx200/left_finger_link">
                         <inertial pos="0.013816 0 0" quat="0.705384 0.705384 -0.0493271 -0.0493271" mass="0.016246" diaginertia="4.79509e-06 3.7467e-06 1.48651e-06"/>
-                        <site name="left_finger_site" pos="0 0 0" size="0.02" rgba="0 1 1 1"/>
+                        <site name="left_finger_site" pos="0 0 0" size="0.001" rgba="0 1 1 1"/>
                         <joint name="left_finger" class="left_finger"/>
                         <geom pos="0 0.005 0" quat="0 0 0 -1" mesh="rx200_9_gripper_finger" class="visual"/>
                         <geom pos="0 0.005 0" quat="0 0 0 -1" mesh="rx200_9_gripper_finger" class="collision"/>
@@ -151,7 +151,7 @@
 
                       <body name="rx200/right_finger_link">
                         <inertial pos="0.013816 0 0" quat="0.705384 0.705384 0.0493271 0.0493271" mass="0.016246" diaginertia="4.79509e-06 3.7467e-06 1.48651e-06"/>
-                        <site name="right_finger_site" pos="0 0 0" size="0.02" rgba="0 1 1 1"/>
+                        <site name="right_finger_site" pos="0 0 0" size="0.001" rgba="0 1 1 1"/>
                         <joint name="right_finger" class="right_finger"/>
                         <geom pos="0 -0.005 0" quat="0 0 1 0" mesh="rx200_9_gripper_finger" class="visual"/>
                         <geom pos="0 -0.005 0" quat="0 0 1 0" mesh="rx200_9_gripper_finger" class="collision"/>

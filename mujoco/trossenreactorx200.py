@@ -6,21 +6,26 @@ from dynamixelcontroller import DynamixelController
 from servo import Servo
 
 class TrossenReactorX200(ManipulatorArm):
-# Main class for the physical ReactorX200 robot
+    '''
+    Main class for the physical ReactorX200 robot.
+    '''
+    def __init__(self, device_name: str):
+        super().__init__(device_name)
 
-    def __init__(self, device_name: str = 'COM5'):
+    def _setup(self):
         '''
         Initializes the DXLController class, setting up communication parameters and enabling torque for all servos.
 
         Parameters:
-        port (str): The port name to which the Dynamixel servos are connected (e.g., 'COM5').
+            device_name (str): The port name to which the Dynamixel servos are connected (e.g., 'COM5').
         '''
         class Waist(Servo):
-            def __init__(self, servo_id=1):
+            def __init__(self, controller, servo_id=1):
                 super().__init__(
+                    controller=controller,
                     servo_id=servo_id, 
                     pos_app_range = [-180, 179.91], # deg
-                    vel_app_range = [0.229, 61],    # rpm, a min value of 0 units means infinity speed in mode "Position Control Mode"
+                    vel_app_range = [0.229, 61],    # rpm, a min value of 0 units means infinity velocity in mode "Position Control Mode"
                     tor_app_range = [-100, 100],    # %
                     pos_sys_range = [0, 4095],
                     vel_sys_range = [1, 262],
@@ -29,11 +34,12 @@ class TrossenReactorX200(ManipulatorArm):
                 )
 
         class Shoulder(Servo):
-            def __init__(self, servo_id=2):
+            def __init__(self, controller, servo_id=2):
                 super().__init__(
+                    controller=controller,
                     servo_id=servo_id, 
                     pos_app_range = [-180, 179.91], # deg
-                    vel_app_range = [0.229, 61],    # rpm, a min value of 0 units means infinity speed in mode "Position Control Mode"
+                    vel_app_range = [0.229, 61],    # rpm, a min value of 0 units means infinity velocity in mode "Position Control Mode"
                     tor_app_range = [-100, 100],    # %
                     pos_sys_range = [0, 4095],
                     vel_sys_range = [1, 262],
@@ -42,11 +48,12 @@ class TrossenReactorX200(ManipulatorArm):
                 )
 
         class ShadowShoulder(Servo):
-            def __init__(self, servo_id=3):
+            def __init__(self, controller, servo_id=3):
                 super().__init__(
+                    controller=controller,
                     servo_id=servo_id, 
                     pos_app_range = [-180, 179.91], # deg
-                    vel_app_range = [0.229, 61],    # rpm, a min value of 0 units means infinity speed in mode "Position Control Mode"
+                    vel_app_range = [0.229, 61],    # rpm, a min value of 0 units means infinity velocity in mode "Position Control Mode"
                     tor_app_range = [-100, 100],    # %
                     pos_sys_range = [0, 4095],
                     vel_sys_range = [1, 262],
@@ -56,11 +63,12 @@ class TrossenReactorX200(ManipulatorArm):
                 )
 
         class Elbow(Servo):
-            def __init__(self, servo_id=4):
+            def __init__(self, controller, servo_id=4):
                 super().__init__(
+                    controller=controller,
                     servo_id=servo_id, 
                     pos_app_range = [-180, 179.91], # deg
-                    vel_app_range = [0.229, 61],    # rpm, a min value of 0 units means infinity speed in mode "Position Control Mode"
+                    vel_app_range = [0.229, 61],    # rpm, a min value of 0 units means infinity velocity in mode "Position Control Mode"
                     tor_app_range = [-100, 100],    # %
                     pos_sys_range = [0, 4095],
                     vel_sys_range = [1, 262],
@@ -69,11 +77,12 @@ class TrossenReactorX200(ManipulatorArm):
                 )
 
         class WristAngle(Servo):
-            def __init__(self, servo_id=5):
+            def __init__(self, controller, servo_id=5):
                 super().__init__(
+                    controller=controller,
                     servo_id=servo_id, 
                     pos_app_range = [-180, 179.91], # deg
-                    vel_app_range = [0.229, 61],    # rpm, a min value of 0 units means infinity speed in mode "Position Control Mode"
+                    vel_app_range = [0.229, 61],    # rpm, a min value of 0 units means infinity velocity in mode "Position Control Mode"
                     tor_app_range = [-100, 100],    # %
                     pos_sys_range = [0, 4095],
                     vel_sys_range = [1, 262],
@@ -82,11 +91,12 @@ class TrossenReactorX200(ManipulatorArm):
                 )
 
         class WristRotation(Servo):
-            def __init__(self, servo_id=6):
+            def __init__(self, controller, servo_id=6):
                 super().__init__(
+                    controller=controller,
                     servo_id=servo_id, 
                     pos_app_range = [-180, 179.91], # deg
-                    vel_app_range = [0.229, 61],    # rpm, a min value of 0 units means infinity speed in mode "Position Control Mode"
+                    vel_app_range = [0.229, 61],    # rpm, a min value of 0 units means infinity velocity in mode "Position Control Mode"
                     tor_app_range = [-100, 100],    # %
                     pos_sys_range = [0, 4095],
                     vel_sys_range = [1, 262],
@@ -95,11 +105,12 @@ class TrossenReactorX200(ManipulatorArm):
                 )
 
         class Gripper(Servo):
-            def __init__(self, servo_id=7):
+            def __init__(self, controller, servo_id=7):
                 super().__init__(
+                    controller=controller,
                     servo_id=servo_id, 
                     pos_app_range = [-180, 179.91], # deg
-                    vel_app_range = [0.229, 61],    # rpm, a min value of 0 units means infinity speed in mode "Position Control Mode"
+                    vel_app_range = [0.229, 61],    # rpm, a min value of 0 units means infinity velocity in mode "Position Control Mode"
                     tor_app_range = [-100, 100],    # %
                     pos_sys_range = [0, 4095],
                     vel_sys_range = [1, 262],
@@ -108,42 +119,48 @@ class TrossenReactorX200(ManipulatorArm):
                     pos_limits=[-20, 50]  # a more conservative range
                 )
 
-        super().__init__(
-            controller=DynamixelController(device_name),
-            joints = {
-                Joint.Waist: ( Waist(),  ), # tuple of 1 servo (IMPORTANT: comma at the end)
-                Joint.Shoulder: ( Shoulder(), ShadowShoulder() ),
-                Joint.Elbow: ( Elbow(),  ),
-                Joint.WristAngle: ( WristAngle(), ),
-                Joint.WristRotation: ( WristRotation(), ),
-                Joint.Gripper: ( Gripper(), )
-            }
-        )
-
+        self.controller = DynamixelController(self.device_name)
+        self.joints = {
+            Joint.Waist: ( Waist(self.controller),  ), # tuple of 1 servo (IMPORTANT: comma at the end)
+            Joint.Shoulder: ( Shoulder(self.controller), ShadowShoulder(self.controller) ),
+            Joint.Elbow: ( Elbow(self.controller),  ),
+            Joint.WristAngle: ( WristAngle(self.controller), ),
+            Joint.WristRotation: ( WristRotation(self.controller), ),
+            Joint.Gripper: ( Gripper(self.controller), )
+        }
 
 if __name__ == '__main__':
-
     robot = TrossenReactorX200()
 
     print('Starting simulation...')
 
-    def print_joint_status(delay:float, steps:int):
+    def print_joint_status(joint: Joint, delay: float, steps: int):
+        '''
+        Prints the status of the specified joint at regular intervals.
+
+        Parameters:
+            joint (Joint): The joint to print the status of.
+            delay (float): Total delay time in seconds.
+            steps (int): Number of steps to divide the delay time into.
+        '''
         for _ in range(steps):
-            velocities = robot.get_joints_velocities()
-            positions = robot.get_joints_positions()
-            forces = robot.get_joints_forces()
-            print(f'velocities: {velocities} positions {positions}, force {forces} %')
-            time.sleep(delay/steps)
+            velocity = robot.get_joint_velocity(joint)
+            position = robot.get_joint_position(joint)
+            force = robot.get_joint_force(joint)
+            print(f'{joint}: velocity {velocity:.2f}, position {position:.2f}, force {force:.2f} %')
+            time.sleep(delay / steps)
 
-    def test_joints(speed: float):
+    def test_joints(velocity: float):
+        '''
+        Tests the movement of all joints at a specified velocity.
 
-        robot.set_joints_velocities([speed] * robot.get_joints_number())
+        Parameters:
+            velocity (float): The velocity in RPM to test the joints with.
+        '''
+        robot.set_joints_velocities([velocity] * robot.get_joints_number())
         robot.enable_joints_torques()
 
-        robot.move_joints_to_home()
-        print_joint_status(5, 10)
-
-        print(f'\nTesting all joints with velocity {speed} RPM')
+        print(f'\nTesting all joints with velocity {velocity} RPM')
 
         for joint in Joint:
             if joint is Joint.Gripper:
@@ -152,34 +169,27 @@ if __name__ == '__main__':
             for pos in range(-30, 31, 10):
                 print(f'Setting joint {joint} to {pos} degrees')
                 robot.set_joint_position(joint, pos)
-                print_joint_status(3, 10)
+                print_joint_status(joint, 3, 10)
 
             robot.move_joint_to_home(joint)
-        # joint = Joint.Shoulder
-        # robot.move_joint_to_home(joint)
-        # print_joint_status(3, 10)
-        # for pos in range(-30, 31, 10):
-        #     print(f'Setting joint {joint} to {pos} degrees')
-        #     robot.set_joint_position(joint, pos)
-        #     print_joint_status(3, 10)
 
-        # robot.move_joint_to_home(joint)
-
+        joint = Joint.Gripper
+        pos_limits = robot.get_joint_position_limits(joint)
         print('\nOpening gripper...')
-        robot.open_gripper()
-        print_joint_status(3, 10)
+        robot.set_joint_position(joint, pos_limits[1])
+        print_joint_status(Joint.Gripper, 3, 10)
         print('Gripper opened.')
 
         print('\nClosing gripper...')
-        robot.close_gripper()
-        print_joint_status(3, 10)
+        robot.set_joint_position(joint, pos_limits[0])
+        print_joint_status(joint, 3, 10)
         print('Gripper closed.')
 
-        # robot.disable_joints_torques()
+        robot.disable_joints_torques()
 
     try:
-        test_joints(5) # test with 20 rpm
-        # test_joints(50) # test with 50 rpm
+        test_joints(5) # test with 5 rpm
+        # test_joints(10) # test with 20 rpm
 
     except Exception as e:
         print(f'Error: {e}')

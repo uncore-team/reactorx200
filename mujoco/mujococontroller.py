@@ -6,12 +6,13 @@ import time
 import threading
 
 class MuJoCoController:
-    def __init__(self, robot_name: str='reactorx200', show_viewer = True):
+    def __init__(self, robot_name: str='reactorx200', show_viewer: bool=True):
         '''
-        Initializes a servo controller instance.
+        Initializes a MuJoCoController instance.
 
         Parameters:
-        robot_name (string): The name of the robot model.
+        robot_name (str): The name of the robot model.
+        show_viewer (bool): Whether to show the viewer or not.
         '''
         self.robot_name = robot_name
         self.show_viewer = show_viewer
@@ -24,10 +25,8 @@ class MuJoCoController:
         model_path = os.path.join(mujoco_path, 'model', robot_name, f'{robot_name}.xml')
         if not os.path.exists(model_path):
             raise ValueError(f'Model file not found at: {model_path}')
-
         try:
             # Load the model and create the simulation context
-
             self.model = mujoco.MjModel.from_xml_path(model_path)
             self.data = mujoco.MjData(self.model)
 
@@ -54,8 +53,8 @@ class MuJoCoController:
         self.timestep = self.model.opt.timestep # MuJoCo sample time
 
         self.torque_enabled = [False] * self.model.nu # torque/force status
-        self.target_velocity = [0] * self.model.nu # torque/force status
-        self.target_position = [0] * self.model.nu
+        self.target_velocity = [0] * self.model.nu # target velocities for each joint
+        self.target_position = [0] * self.model.nu # target positions for each joint
 
         self._start()
 
@@ -70,6 +69,7 @@ class MuJoCoController:
 
     def _step(self):
         '''
+        Advances the simulation by one step.
         '''
         with self.lock:
             for servo in range(self.model.nu):
@@ -104,7 +104,7 @@ class MuJoCoController:
         Main viewer loop.
         '''
         if self.show_viewer:
-            viewer =  mujoco.viewer.launch_passive(self.model, self.data)
+            viewer = mujoco.viewer.launch_passive(self.model, self.data)
             last_time = time.perf_counter()
             while self.running.is_set() and viewer.is_running():
                 current_time = time.perf_counter()
@@ -140,7 +140,7 @@ class MuJoCoController:
         with self.lock:
             self.torque_enabled[servo] = False
 
-    def reboot(self, servo):
+    def reboot(self, servo: int):
         '''
         Reboots the specified servo.
 
@@ -153,18 +153,23 @@ class MuJoCoController:
     def set_torque(self, servo: int, value: bool):
         '''
         Enables/disables the position control of the servo, allowing it to move or not.
+
+        Parameters:
+          servo (int): The ID of the servo.
+          value (bool): True to enable torque, False to disable.
         '''
         with self.lock:
             self.torque_enabled[servo] = value
-            # if value:
-            #     self.target_position[servo] = self.data.qpos[servo]
 
     def get_torque(self, servo: int) -> bool:
         '''
-        Get the position control status of the servo.
+        Gets the position control status of the servo.
 
         Parameters:
-        :servo (int): The servo id.
+          servo (int): The ID of the servo.
+
+        Returns:
+          bool: True if torque is enabled, False otherwise.
         '''
         with self.lock:
             return self.torque_enabled[servo]
@@ -174,10 +179,10 @@ class MuJoCoController:
         Gets the torque/force of a servo in torque units (N/m or N).
 
         Parameters:
-        :servo (int): The servo id.
+          servo (int): The ID of the servo.
 
         Returns:
-        :float: The torque/force in torque units (N/m or N).
+          float: The torque/force in torque units (N/m or N).
         '''
         with self.lock:
             if not self.torque_enabled[servo]:
@@ -192,8 +197,8 @@ class MuJoCoController:
         Sets the velocity of a servo in velocity units (rad/s).
 
         Parameters:
-        :servo (int): The servo id.
-        :velocity (float): The velocity in velocity units (rad/).
+          servo (int): The ID of the servo.
+          velocity (float): The velocity in velocity units (rad/s).
         '''
         with self.lock:
             if self.torque_enabled[servo]:
@@ -205,10 +210,10 @@ class MuJoCoController:
         Gets the velocity of a servo in velocity units (rad/s).
 
         Parameters:
-        :servo (int): The servo id.
+          servo (int): The ID of the servo.
 
         Returns:
-        :float: The velocity in velocity units (rad/s).
+          float: The velocity in velocity units (rad/s).
         '''
         with self.lock:
             return self.target_velocity[servo]
@@ -218,8 +223,8 @@ class MuJoCoController:
         Sets the position of a servo in position units (rad).
 
         Parameters:
-        :servo (int): The servo id.
-        :position (float): The position in position units (rad).
+          servo (int): The ID of the servo.
+          position (float): The position in position units (rad).
         '''
         with self.lock:
             if not self.torque_enabled[servo]:
@@ -231,10 +236,10 @@ class MuJoCoController:
         Gets the position of a servo in position units (rad).
 
         Parameters:
-        :servo (int): The servo id.
+          servo (int): The ID of the servo.
 
         Returns:
-        :float: The position in position units (rad).
+          float: The position in position units (rad).
         '''
         with self.lock:
             return self.data.qpos[servo]
@@ -242,14 +247,27 @@ class MuJoCoController:
     def get_status(self, servo: int) -> int:
         '''
         Gets the hardware error status of the servo.
+
+        Parameters:
+          servo (int): The ID of the servo.
+
+        Returns:
+          int: The hardware error status of the servo.
         '''
         with self.lock:
-            status = 0 # it need to be defined
+            status = 0 # it needs to be defined
             return status
 
     def get_moving_status(self, servo: int) -> int:
         '''
+        Gets the moving status of the servo.
+
+        Parameters:
+          servo (int): The ID of the servo.
+
+        Returns:
+          int: The moving status of the servo.
         '''
         with self.lock:
-            status = 0 # it need to be defined
+            status = 0 # it needs to be defined
             return status

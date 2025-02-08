@@ -6,22 +6,19 @@ import time
 class DynamixelController(Controller):
     def __init__(self, device_name: str, baud_rate: int = 1000000, protocol: int = 2):
         '''
-        Initializes a DXLController instance.
+        Initializes a DynamixelController instance.
 
         Parameters:
         device_name (str): Device name (e.g., COM port or USB port)
-        additional_param (str): An additional parameter specific to DXLController
         baud_rate (int): Baudrate for communication (default is 1000000)
         protocol (int): Protocol version (default is 2)
         '''
-        super().__init__() # Call the constructor of the base class
-
         self.device_name = device_name  # device name (e.g., COM port or USB port)
         self.baud_rate = baud_rate  # baudrate
         self.protocol = protocol  # protocol version
 
         # Addresses/lengths of relevant control table entries
-        # tuple meaning: (command address, number of bytes)
+        # tuple meaning: (command name, command address, number of bytes)
         self.COMMANDS = {
             'DRIVE_MODE':            ('Drive Mode', 10, 1),
             'TORQUE_ENABLE':         ('Torque Enable', 64, 1),
@@ -37,32 +34,9 @@ class DynamixelController(Controller):
         self.serial = dxl.PortHandler(self.device_name)
         self.handler = dxl.PacketHandler(self.protocol)
 
-        try:
-            # Attempt to open the communication port
-            if not self.serial.openPort():
-                raise Exception(f'Failed to open port {self.device_name}')
+        self._start()
 
-            # Attempt to setup the communication baudrate
-            if not self.serial.setBaudRate(self.baud_rate):
-                raise Exception(f'Failed to set baudrate to {self.baud_rate}')
-
-            # Scan for servos with IDs from 1 to 253
-            print(f'Scanning for connected servos...')
-            for servo in range(1, 8): # from 1 to 8
-                print(f'\tping to ID {servo}')
-                _, result, error = self.handler.ping(self.serial, servo)
-                if result != dxl.COMM_SUCCESS:
-                    print(f"Error on ID {servo}: {self.handler.getTxRxResult(result)}")
-
-                if (error & errors.HARDWARE):
-                    print(f'Rebooting for recovering ID {servo}...')
-                    self.reboot()
-
-        except Exception as e:
-            Exception(f'Initialization error: {str(e)}')
-            raise
-
-    def _write_bytes(self, servo: int, command: list, value: int) -> int:
+    def _write_bytes(self, servo: int, command: tuple, value: int) -> int:
         '''
         Writes a byte, word or dword to the specified servo.
 
@@ -84,9 +58,9 @@ class DynamixelController(Controller):
                    Bit 0: Input Voltage Error. Detects that input voltage exceeds the configured 
                           operating voltage
         '''
+        name, address, length = command
         if len(command) != 3:
             raise Exception(f'Error running the command "{name}"({address}) for ID {servo}: Bad command structure.')
-        name, address, length = command
         if length == 1:
             result, error = self.handler.write1ByteTxRx(self.serial, servo, address, value)
         elif length == 2:
@@ -96,17 +70,17 @@ class DynamixelController(Controller):
         else:
             raise Exception(f'Error writing the address "{address}"({name}) for ID {servo}: Bad command length.')
 
-        if (result != dxl.COMM_SUCCESS): # 0, -1000, -2000, -1001, -9000, -3001, -3002
+        if result != dxl.COMM_SUCCESS:  # 0, -1000, -2000, -1001, -9000, -3001, -3002
             raise Exception(f'Error running the command "{name}"({address}) for ID {servo}: Communication error {self.handler.getTxRxResult(result)}')
 
-        if (error & errors.HARDWARE):
+        if error & errors.HARDWARE:
             print(f'Hardware error for ID {servo}: Please check error status for more info or reboot.')
 
         return error
 
-    def _read_bytes(self, servo: int, command: list) -> int:
+    def _read_bytes(self, servo: int, command: tuple) -> int:
         '''
-        Reads a byte, word or dword to the specified servo.
+        Reads a byte, word or dword from the specified servo.
 
         Parameters:
         servo (int): The ID of the servo.
@@ -127,9 +101,9 @@ class DynamixelController(Controller):
                    Bit 0: Input Voltage Error. Detects that input voltage exceeds the configured 
                           operating voltage
         '''
+        name, address, length = command
         if len(command) != 3:
             raise Exception(f'Error running the command "{name}"({address}) for ID {servo}: Bad command structure.')
-        name, address, length = command
         if length == 1:
             value, result, error = self.handler.read1ByteTxRx(self.serial, servo, address)
         elif length == 2:
@@ -139,17 +113,42 @@ class DynamixelController(Controller):
         else:
             raise Exception(f'Error reading the address "{address}"({name}) for ID {servo}: Bad command length.')
 
-        if (result != dxl.COMM_SUCCESS): # 0, -1000, -2000, -1001, -9000, -3001, -3002
+        if result != dxl.COMM_SUCCESS:  # 0, -1000, -2000, -1001, -9000, -3001, -3002
             raise Exception(f'Error running the command "{name}"({address}) for ID {servo}: Communication error\n{self.handler.getTxRxResult(result)}')
 
-        if (error & errors.HARDWARE):
+        if error & errors.HARDWARE:
             print(f'Hardware error for ID {servo}: Please check error status for more info or reboot.')
 
         return value, error
 
-    def _start():
+    def _start(self):
         '''
+        Starts the communication with the servos by opening the port and setting the baudrate.
+        Scans for connected servos and reboots them if necessary.
         '''
+        try:
+            # Attempt to open the communication port
+            if not self.serial.openPort():
+                raise Exception(f'Failed to open port {self.device_name}')
+
+            # Attempt to setup the communication baudrate
+            if not self.serial.setBaudRate(self.baud_rate):
+                raise Exception(f'Failed to set baudrate to {self.baud_rate}')
+
+            # Scan for servos with IDs from 1 to 253
+            print(f'Scanning for connected servos...')
+            for servo in range(1, 8):  # from 1 to 8
+                print(f'\tping to ID {servo}')
+                _, result, error = self.handler.ping(self.serial, servo)
+                if result != dxl.COMM_SUCCESS:
+                    print(f"Error on ID {servo}: {self.handler.getTxRxResult(result)}")
+
+                if (error & errors.HARDWARE):
+                    print(f'Rebooting for recovering ID {servo}...')
+                    self.reboot(servo)
+
+        except Exception as e:
+            raise Exception(f'Initialization error: {str(e)}')
 
     def close(self):
         '''
@@ -170,9 +169,9 @@ class DynamixelController(Controller):
           error: The error returned by the servo (e.g. hardware error)
         '''
         result, error = self.handler.factoryReset(self.serial, servo, 2)  # Reset all except ID and baudrate
-        if (result != dxl.COMM_SUCCESS): # 0, -1000, -2000, -1001, -9000, -3001, -3002
+        if result != dxl.COMM_SUCCESS:  # 0, -1000, -2000, -1001, -9000, -3001, -3002
             raise Exception(f'Error running the command "FACTORY_RESET" for ID {servo}: Communication error\n{self.handler.getTxRxResult(result)}')
-        if (error != errors.NO_ERROR):
+        if error != errors.NO_ERROR:
             raise Exception(f'Error running the command "FACTORY_RESET" for ID {servo}: Communication error\n{self.handler.getRxPacketError(error)}')
         time.sleep(2)  # Allow time for reboot
 
@@ -189,63 +188,54 @@ class DynamixelController(Controller):
           error: The error returned by the servo (e.g. hardware error)
         '''
         result, error = self.handler.reboot(self.serial, servo)
-        if (result != dxl.COMM_SUCCESS): # 0, -1000, -2000, -1001, -9000, -3001, -3002
+        if result != dxl.COMM_SUCCESS:  # 0, -1000, -2000, -1001, -9000, -3001, -3002
             raise Exception(f'Error running the command "REBOOT" for ID {servo}: Communication error\n{self.handler.getTxRxResult(result)}')
-        if (error != errors.NO_ERROR):
+        if error != errors.NO_ERROR:
             raise Exception(f'Error running the command "REBOOT" for ID {servo}: Communication error\n{self.handler.getRxPacketError(error)}')
         time.sleep(2)  # Allow time for reboot
 
-    def set_torque(self, servo:int, value:bool):
+    def set_torque(self, servo: int, value: bool):
         '''
-        Enables torque on the servo, allowing it to move.
+        Enables or disables torque on the servo, allowing it to move or not.
+
+        Parameters:
+          servo (int): The ID of the servo.
+          value (bool): True to enable torque, False to disable.
         '''
         error = self._write_bytes(servo, self.COMMANDS['TORQUE_ENABLE'], 1 if value else 0)
         if error:
             raise Exception(f'Error enabling position control for the servo {servo}.')
 
-    def get_torque(self, servo:int) -> bool:
+    def get_torque(self, servo: int) -> bool:
         '''
-        Get the status of the position control system.
+        Gets the status of the position control system.
+
+        Parameters:
+          servo (int): The ID of the servo.
+
+        Returns:
+          bool: True if torque is enabled, False otherwise.
         '''
         value, error = self._read_bytes(servo, self.COMMANDS['TORQUE_ENABLE'])
         if error:
             raise Exception(f'Error reading the status of the position control for the servo {servo}.')
         return True if value else False
 
-    # def enable_torque(self, servo: int):
-    #     '''
-    #     Enables torque on the servo, allowing it to move.
-    #     '''
-    #     error = self._write_bytes(servo, self.COMMANDS['TORQUE_ENABLE'], 1)
-    #     if error:
-    #         raise Exception(f'Error enabling position control for the servo {servo}.')
-
-    # def disable_torque(self, servo: int):
-    #     '''
-    #     Disables torque on the servo, allowing free movement.
-    #     '''
-    #     error = self._write_bytes(servo, self.COMMANDS['TORQUE_ENABLE'], 0)
-    #     if error:
-    #         raise Exception(f'Error disabling position control for the servo {servo}.')
-
-    # def is_torque_enabled(self, servo: int) -> bool:
-    #     '''
-    #     Get the status of the position control system.
-    #     '''
-    #     value, error = self._read_bytes(servo, self.COMMANDS['TORQUE_ENABLE'])
-    #     if error:
-    #         raise Exception(f'Error reading the status of the position control for the servo {servo}.')
-    #     return True if value else False
-
     def get_force(self, servo: int) -> float:
         '''
         Gets load percentage on the servo.
+
+        Parameters:
+          servo (int): The ID of the servo.
+
+        Returns:
+          float: The current load percentage on the servo.
         '''
         tor_units, error = self._read_bytes(servo, self.COMMANDS['PRESENT_LOAD'])
         if error:
             raise Exception(f'Error getting the load rate of the servo {servo}.')
-        if ((tor_units >> 15) & 1): # 2-complement?
-            tor_units -= 65536 # range -1024 to 1023
+        if (tor_units >> 15) & 1:  # 2-complement?
+            tor_units -= 65536  # range -1024 to 1023
         return tor_units
 
     def set_velocity(self, servo: int, velocity: float):
@@ -253,22 +243,22 @@ class DynamixelController(Controller):
         Sets the velocity of the servo in velocity units.
 
         Parameters:
-        :servo (int): The servo id.
-        :velocity (float): The velocity in velocity units.
+          servo (int): The ID of the servo.
+          velocity (float): The velocity in velocity units.
         '''
         error = self._write_bytes(servo, self.COMMANDS['PROFILE_VELOCITY'], int(velocity))
         if error:
-            raise Exception(f'Error changing the position of the servo {servo}.')
+            raise Exception(f'Error changing the velocity of the servo {servo}.')
 
     def get_velocity(self, servo: int) -> float:
         '''
         Gets the current velocity of the servo in velocity units.
 
         Parameters:
-        :servo (int): The servo id.
+          servo (int): The ID of the servo.
 
         Returns:
-        :float: The servo velocity in velocity units.
+          float: The current velocity of the servo in velocity units.
         '''
         vel_units, error = self._read_bytes(servo, self.COMMANDS['PROFILE_VELOCITY'])
         if error:
@@ -280,8 +270,8 @@ class DynamixelController(Controller):
         Sets the target position of the servo in position units.
 
         Parameters:
-        :servo (int): The servo id.
-        :position (float): The position in position units.
+          servo (int): The ID of the servo.
+          position (float): The position in position units.
         '''
         error = self._write_bytes(servo, self.COMMANDS['GOAL_POSITION'], int(position))
         if error:
@@ -292,10 +282,10 @@ class DynamixelController(Controller):
         Gets the current position of the servo in position units.
 
         Parameters:
-        :servo (int): The servo id.
+          servo (int): The ID of the servo.
 
         Returns:
-        :float: The position in position units.
+          float: The current position of the servo in position units.
         '''
         pos_units, error = self._read_bytes(servo, self.COMMANDS['PRESENT_POSITION'])
         if error:
@@ -305,14 +295,27 @@ class DynamixelController(Controller):
     def get_status(self, servo: int) -> int:
         '''
         Gets the hardware error status of the servo.
+
+        Parameters:
+          servo (int): The ID of the servo.
+
+        Returns:
+          int: The hardware error status of the servo.
         '''
-        status, error =  self._read_bytes(servo, self.COMMANDS['HARDWARE_ERROR_STATUS'])
+        status, error = self._read_bytes(servo, self.COMMANDS['HARDWARE_ERROR_STATUS'])
         if error:
             raise Exception(f'Error getting the status of the servo {servo}.')
         return status
 
     def get_moving_status(self, servo: int) -> int:
         '''
+        Gets the moving status of the servo.
+
+        Parameters:
+          servo (int): The ID of the servo.
+
+        Returns:
+          int: The moving status of the servo.
         '''
         status, error = self._read_bytes(servo, self.COMMANDS['MOVING_STATUS'])
         if error:

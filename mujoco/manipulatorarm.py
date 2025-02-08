@@ -1,3 +1,4 @@
+from abc import ABC, abstractmethod
 from enum import Enum
 from controller import Controller
 from servo import Servo
@@ -13,21 +14,48 @@ class Joint(Enum):
     WristRotation = 4
     Gripper = 5
 
-class ManipulatorArm:
+class ManipulatorArm(ABC):
     '''
     Class representing a manipulator arm with multiple joints.
     Provides methods to control and get the status of the joints.
     '''
-    def __init__(self, controller:Controller=None, joints:list[tuple[Servo]]=None):
+    def __init__(self, device_name: str):
         '''
         Initializes the ManipulatorArm instance.
 
         Parameters:
-            controller (Controller): The controller used to communicate with the servos.
-            joints (list): A list of joints in the manipulator arm.
+            device_name (str): The name of the device to which the manipulator arm is connected.
         '''
-        self.controller = controller
-        self.joints = joints
+        self.device_name = device_name
+        self.controller = None
+        self.joints = {}
+
+        self._setup() # setup robot joints
+
+        self._set_safe_joints_velocities() # Set safe velocities for all joints
+
+    @abstractmethod
+    def _setup(self):
+        '''
+        Abstract method to setup the manipulator arm.
+        This method should be implemented by subclasses to initialize the joints and controller.
+        '''
+        pass
+
+    def _set_safe_joints_velocities(self):
+        '''
+        Sets safe velocities for all joints.
+        Iterates through each joint and sets the velocity to a safe value.
+        '''
+        for joint in self.joints:
+            for servo in self.joints[joint]:
+                servo.set_velocity(servo.get_safe_velocity())
+
+    def close(self):
+        '''
+        Closes the controller connection.
+        '''
+        self.controller.close()
 
     def get_joints_number(self) -> int:
         '''
@@ -38,101 +66,68 @@ class ManipulatorArm:
         '''
         return len(self.joints)
 
-    def close(self):
-        '''
-        Disables the torque of all joints and closes the controller.
-        '''
-        self.disable_joints_torques()
-        self.controller.close()
-
-    def move_joint_to_home(self, joint:Joint):
+    def move_joint_to_home(self, joint: Joint):
         '''
         Moves a joint to its home (default) position.
 
         Parameters:
             joint (Joint): The joint to move to its home position.
         '''
-        if joint not in Joint:
+        if joint not in self.joints.keys():
             raise ValueError('Invalid joint ID')
 
-        servo = self.joints[joint][0]  # first joint servo
-        self.set_joint_position(joint, servo.get_home_position())
+        for servo in self.joints[joint]:
+            servo.set_position(servo.get_home_position())
 
     def move_joints_to_home(self):
         '''
         Moves all joints to their home (default) positions.
         '''
         for joint in self.joints:
-            self.move_joint_to_home(joint)
+            for servo in self.joints[joint]:
+                servo.set_position(servo.get_home_position())
 
     def enable_joint_torque(self, joint: Joint):
         '''
-        Enables/disables position control for the servo.
+        Enables position control for the servo.
+
+        Parameters:
+            joint (Joint): The joint to enable torque for.
         '''
-        self.set_joint_torque(joint, True)
+        if joint not in self.joints.keys():
+            raise ValueError('Invalid joint ID')
+
+        for servo in self.joints[joint]:
+            servo.set_torque(True)
 
     def enable_joints_torques(self):
         '''
         Enables position control for all servos.
         '''
         for joint in self.joints:
-            self.set_joint_torque(joint, True)
+            for servo in self.joints[joint]:
+                servo.set_torque(True)
 
     def disable_joint_torque(self, joint: Joint):
         '''
-        Enables/disables position control for the servo.
+        Disables position control for the servo.
+
+        Parameters:
+            joint (Joint): The joint to disable torque for.
         '''
-        self.set_joint_torque(joint, False)
+        if joint not in self.joints.keys():
+            raise ValueError('Invalid joint ID')
+
+        for servo in self.joints[joint]:
+            servo.set_torque(False)
 
     def disable_joints_torques(self):
         '''
         Disables position control for all servos.
         '''
         for joint in self.joints:
-            self.set_joint_torque(joint, False)
-
-    def set_joint_torque(self, joint: Joint, value: bool):
-        '''
-        Enables position control for the servo.
-        '''
-        if joint not in Joint:
-            raise ValueError('Invalid joint ID')
-
-        for servo in self.joints[joint]:
-            self.controller.set_torque(servo.get_id(), value)
-
-    def set_joints_torques(self, values: list):
-        '''
-        Enables position control for the servo.
-        '''
-        if len(values) != len(self.joints):
-            raise ValueError('Number of velocities must match the number of joints.')
-
-        for index, joint in enumerate(self.joints):
-            self.set_joint_torque(joint, values[index])
-
-    def get_joint_torque(self, joint: Joint) -> bool:
-        '''
-        Enables/disables position control for the servo.
-        '''
-        if joint not in Joint:
-            raise ValueError('Invalid joint ID')
-
-        servo = self.joints[joint][0]  # first joint servo
-        return self.controller.get_torque(servo.get_id())
-
-    def get_joints_torques(self) -> list:
-        '''
-        Gets the current torques/forces percent of all servos.
-
-        Returns:
-            list: A list of current torques/forces for all joints.
-        '''
-        torques = [
-            self.get_joint_torque(joint)
-                for joint in self.joints
-        ]
-        return torques
+            for servo in self.joints[joint]:
+                servo.set_torque(False)
 
     def get_joint_force(self, joint: Joint) -> float:
         '''
@@ -144,23 +139,23 @@ class ManipulatorArm:
         Returns:
             float: The current force in percentage.
         '''
-        if joint not in Joint:
+        if joint not in self.joints.keys():
             raise ValueError('Invalid joint ID')
 
         servo = self.joints[joint][0]  # first joint servo
-        return self.controller.get_force(servo.get_id())
+        return servo.get_force()
 
-    def get_joints_forces(self) -> list:
+    def get_joints_forces(self) -> list[float]:
         '''
         Gets the current forces of all servos in percentage.
 
         Returns:
             list: A list of current forces in percentage for all joints.
         '''
-        forces = [
-            self.get_joint_force(joint)
-            for joint in self.joints
-        ]
+        forces = [0] * len(self.joints)
+        for index, joint in enumerate(self.joints):
+            servo = self.joints[joint][0] # first joint servo
+            forces[index] = servo.get_force()
         return forces
 
     def set_joint_velocity(self, joint: Joint, velocity: float):
@@ -170,17 +165,15 @@ class ManipulatorArm:
 
         Parameters:
             joint (Joint): Joint to control (e.g., Shoulder, Elbow).
-            velocity (float): Velocity in RPM (0-100).
+            velocity (float): Velocity in RPM.
         '''
-        if joint not in Joint:
+        if joint not in self.joints.keys():
             raise ValueError('Invalid joint ID')
 
         for servo in self.joints[joint]:
-            if not servo.valid_velocity(velocity):
-                raise ValueError(f'RPM ({velocity}) out of range [{servo.get_velocity_limits()}] for servo {servo.get_id()}')
-            self.controller.set_velocity(servo.get_id(), servo.vel_to_sys(velocity))
+            servo.set_velocity(velocity)
 
-    def set_joints_velocities(self, velocities: list):
+    def set_joints_velocities(self, velocities: list[float]):
         '''
         Sets the maximum velocities for all servos in RPM.
         This limits the rate of change of the target positions for all joints.
@@ -192,7 +185,8 @@ class ManipulatorArm:
             raise ValueError('Number of velocities must match the number of joints.')
 
         for index, joint in enumerate(self.joints):
-            self.set_joint_velocity(joint, velocities[index])
+            for servo in self.joints[joint]:
+                servo.set_velocity(velocities[index])
 
     def get_joint_velocity(self, joint: Joint) -> float:
         '''
@@ -204,41 +198,24 @@ class ManipulatorArm:
         Returns:
             float: The current velocity in RPM.
         '''
-        if joint not in Joint:
+        if joint not in self.joints.keys():
             raise ValueError('Invalid joint ID')
 
         servo = self.joints[joint][0]  # first joint servo
-        velocity = self.controller.get_velocity(servo.get_id())
-        return servo.vel_to_app(velocity)
+        return servo.get_velocity()
 
-    def get_joints_velocities(self) -> list:
+    def get_joints_velocities(self) -> list[float]:
         '''
         Gets the current velocities of all servos in RPM.
 
         Returns:
             list: A list of current velocities in RPM for all joints.
         '''
-        velocities = [
-            self.get_joint_velocity(joint)
-            for joint in self.joints
-        ]
+        velocities = [0] * len(self.joints)
+        for index, joint in enumerate(self.joints):
+            servo = self.joints[joint][0] # first joint servo
+            velocities[index] = servo.get_velocity()
         return velocities
-
-    def open_gripper(self):
-        '''
-        Opens the gripper by moving it to its home position.
-        '''
-        servo = self.joints[Joint.Gripper][0]  # first joint servo
-        position = servo.get_position_limits()[1]
-        self.set_joint_position(Joint.Gripper, position)
-
-    def close_gripper(self):
-        '''
-        Closes the gripper by moving it to its home position.
-        '''
-        servo = self.joints[Joint.Gripper][0]  # first joint servo
-        position = servo.get_position_limits()[0]
-        self.set_joint_position(Joint.Gripper, position)
 
     def set_joint_position(self, joint: Joint, position: float):
         '''
@@ -248,16 +225,13 @@ class ManipulatorArm:
             joint (Joint): Joint to move.
             position (float): Target position in degrees.
         '''
-        if joint not in Joint:
+        if joint not in self.joints.keys():
             raise ValueError(f'Invalid joint ID: {joint}')
 
         for servo in self.joints[joint]:
-            if not servo.valid_position(position):
-                raise ValueError(f'Position ({position}) out of range [{servo.get_pos_limits()}] for servo {servo.get_id()}')
-            factor = -1 if servo.get_reverse_mode() else 1
-            self.controller.set_position(servo.get_id(), servo.pos_to_sys(factor * position))
+            servo.set_position(position)
 
-    def set_joints_positions(self, positions: list):
+    def set_joints_positions(self, positions: list[float]):
         '''
         Sets the target positions for all joints in degrees.
 
@@ -268,7 +242,8 @@ class ManipulatorArm:
             raise ValueError('Number of positions must match the number of joints.')
 
         for index, joint in enumerate(self.joints):
-            self.set_joint_position(joint, positions[index])
+            for servo in self.joints[joint]:
+                servo.set_position(positions[index])
 
     def get_joint_position(self, joint: Joint) -> float:
         '''
@@ -280,23 +255,53 @@ class ManipulatorArm:
         Returns:
             float: The current position of the joint in degrees.
         '''
-        if joint not in Joint:
+        if joint not in self.joints.keys():
             raise ValueError(f'Invalid joint ID: {joint}')
 
         servo = self.joints[joint][0]   # first joint servo
-        position = self.controller.get_position(servo.get_id())  # servo units
-        factor = -1 if servo.get_reverse_mode() else 1
-        return factor * servo.pos_to_app(position)
+        return servo.get_position()
 
-    def get_joints_positions(self) -> list:
+    def get_joints_positions(self) -> list[float]:
         '''
         Gets the current positions of all joints in degrees.
 
         Returns:
             list: A list of current positions in degrees for all joints.
         '''
-        positions = [
-            self.get_joint_position(joint)
-            for joint in self.joints
-        ]
+        positions = [0] * len(self.joints)
+        for index, joint in enumerate(self.joints):
+            servo = self.joints[joint][0]  # first joint servo
+            positions[index] = servo.get_position()
         return positions
+
+    def get_joint_position_limits(self, joint: Joint) -> list[float]:
+        '''
+        Gets the position limits of a specific joint.
+
+        Parameters:
+            joint (Joint): Joint to get the position limits of.
+
+        Returns:
+            list: A list of position limits for the joint.
+        '''
+        if joint not in self.joints.keys():
+            raise ValueError(f'Invalid joint ID: {joint}')
+
+        servo = self.joints[joint][0]   # first joint servo
+        return servo.get_position_limits()
+
+    def get_joint_velocity_limits(self, joint: Joint) -> list[float]:
+        '''
+        Gets the velocity limits of a specific joint.
+
+        Parameters:
+            joint (Joint): Joint to get the velocity limits of.
+
+        Returns:
+            list: A list of velocity limits for the joint.
+        '''
+        if joint not in self.joints.keys():
+            raise ValueError(f'Invalid joint ID: {joint}')
+
+        servo = self.joints[joint][0]   # first joint servo
+        return servo.get_velocity_limits()
