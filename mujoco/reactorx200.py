@@ -254,7 +254,7 @@ class ReactorX200:
         Returns:
             list: A list of position limits for the joint.
         '''
-        return self.robots[0].get_position_limits(joint)
+        return self.robots[0].get_joint_position_limits(joint)
 
     def get_joint_velocity_limits(self, joint: Joint) -> list[float]:
         '''
@@ -266,7 +266,7 @@ class ReactorX200:
         Returns:
             list: A list of velocity limits for the joint.
         '''
-        return self.robots[0].get_velocity_limits(joint)
+        return self.robots[0].get_joint_velocity_limits(joint)
 
 
 if __name__ == '__main__':
@@ -316,6 +316,14 @@ if __name__ == '__main__':
 
             robot.move_joint_to_home(joint)
 
+        # joint = Joint.Shoulder
+        # for pos in range(-30, 31, 10):
+        #     print(f'Setting joint {joint} to {pos} degrees')
+        #     robot.set_joint_position(joint, pos)
+        #     print_joint_status(joint, 3, 10)
+        # robot.move_joint_to_home(joint)
+        # time.sleep(5)
+
         joint = Joint.Gripper
         pos_limits = robot.get_joint_position_limits(joint)
         print('\nOpening gripper...')
@@ -331,7 +339,7 @@ if __name__ == '__main__':
         robot.disable_joints_torques()
 
     try:
-        test_joints(10) # test with 5 rpm
+        test_joints(5) # test with 5 rpm
         # test_joints(10) # test with 20 rpm
 
     except Exception as e:

@@ -50,7 +50,7 @@ class MuJoCoController:
         self.viewer_thread = threading.Thread(target=self._viewer_loop, name='Viewer Thread')
 
         self.update_time = 0.2 # sec
-        self.timestep = self.model.opt.timestep # MuJoCo sample time
+        self.timestep = 0.002
 
         self.torque_enabled = [False] * self.model.nu # torque/force status
         self.target_velocity = [0] * self.model.nu # target velocities for each joint
@@ -66,6 +66,7 @@ class MuJoCoController:
             self.running.set() # lets work
             self.simul_thread.start()
             self.viewer_thread.start()
+
 
     def _step(self):
         '''
@@ -97,7 +98,7 @@ class MuJoCoController:
                 self._step()
                 last_time = current_time
             else:
-                time.sleep(max(0, min(0.001, self.timestep - elapsed_time)))
+                time.sleep(max(0, min(self.timestep/10, self.timestep - elapsed_time)))
 
     def _viewer_loop(self):
         '''
@@ -114,7 +115,7 @@ class MuJoCoController:
                     viewer.sync()
                     last_time = current_time
                 else:
-                    time.sleep(max(0, min(0.001, self.update_time - elapsed_time)))  # Short sleep for better responsiveness
+                    time.sleep(max(0, min(self.update_time/10, self.update_time - elapsed_time)))  # Short sleep for better responsiveness
 
     def close(self):
         '''
@@ -203,6 +204,8 @@ class MuJoCoController:
         with self.lock:
             if self.torque_enabled[servo]:
                 raise Exception(f'Attempt to set velocity with torque enabled for servo {servo}.')
+            # adjust the timestep according to servo velocity
+            self.timestep = round(np.interp(velocity, [np.pi/30, 61*np.pi/30], [0.02, 0.002]), 3)
             self.target_velocity[servo] = velocity
 
     def get_velocity(self, servo: int) -> float:

@@ -30,7 +30,7 @@ class TrossenReactorX200(ManipulatorArm):
                     pos_sys_range = [0, 4095],
                     vel_sys_range = [1, 262],
                     tor_sys_range = [-1000, 1000],
-                    pos_limits=[-180, 180]  # pos limits (degrees)
+                    position_limits=[-180, 180]  # pos limits (degrees)
                 )
 
         class Shoulder(Servo):
@@ -44,7 +44,7 @@ class TrossenReactorX200(ManipulatorArm):
                     pos_sys_range = [0, 4095],
                     vel_sys_range = [1, 262],
                     tor_sys_range = [-1000, 1000],
-                    pos_limits=[-108, 113]
+                    position_limits=[-108, 113]
                 )
 
         class ShadowShoulder(Servo):
@@ -58,7 +58,7 @@ class TrossenReactorX200(ManipulatorArm):
                     pos_sys_range = [0, 4095],
                     vel_sys_range = [1, 262],
                     tor_sys_range = [-1000, 1000],
-                    pos_limits=[-108, 113],
+                    position_limits=[-108, 113],
                     reverse_mode=True
                 )
 
@@ -73,7 +73,7 @@ class TrossenReactorX200(ManipulatorArm):
                     pos_sys_range = [0, 4095],
                     vel_sys_range = [1, 262],
                     tor_sys_range = [-1000, 1000],
-                    pos_limits=[-108, 93]
+                    position_limits=[-108, 93]
                 )
 
         class WristAngle(Servo):
@@ -87,7 +87,7 @@ class TrossenReactorX200(ManipulatorArm):
                     pos_sys_range = [0, 4095],
                     vel_sys_range = [1, 262],
                     tor_sys_range = [-1000, 1000],
-                    pos_limits=[-100, 123]
+                    position_limits=[-100, 123]
                 )
 
         class WristRotation(Servo):
@@ -101,7 +101,7 @@ class TrossenReactorX200(ManipulatorArm):
                     pos_sys_range = [0, 4095],
                     vel_sys_range = [1, 262],
                     tor_sys_range = [-1000, 1000],
-                    pos_limits=[-180, 180]
+                    position_limits=[-180, 180]
                 )
 
         class Gripper(Servo):
@@ -116,7 +116,7 @@ class TrossenReactorX200(ManipulatorArm):
                     vel_sys_range = [1, 262],
                     tor_sys_range = [-1000, 1000],
                     #pos_limits=[-30, 60]  # -30 -> close, 60 -> open
-                    pos_limits=[-20, 50]  # a more conservative range
+                    position_limits=[-20, 50]  # a more conservative range
                 )
 
         self.controller = DynamixelController(self.device_name)
@@ -172,6 +172,14 @@ if __name__ == '__main__':
                 print_joint_status(joint, 3, 10)
 
             robot.move_joint_to_home(joint)
+
+        # joint = Joint.WristRotation
+        # for pos in range(-30, 31, 10):
+        #     print(f'Setting joint {joint} to {pos} degrees')
+        #     robot.set_joint_position(joint, pos)
+        #     print_joint_status(joint, 3, 10)
+        # robot.move_joint_to_home(joint)
+        # time.sleep(5)
 
         joint = Joint.Gripper
         pos_limits = robot.get_joint_position_limits(joint)

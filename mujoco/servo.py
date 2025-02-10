@@ -56,7 +56,7 @@ class Servo:
                 tor_sys_range: list[float],
                 tor_app_range: list[float],
                 position_limits: list[float] = [-30, 30],
-                velocity_limits: list[float] = [5, 50],
+                velocity_limits: list[float] = [1, 30],
                 home_position: float = 0,
                 safe_velocity: float = 10,
                 reverse_mode: bool = False):

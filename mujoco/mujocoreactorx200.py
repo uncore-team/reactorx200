@@ -100,6 +100,36 @@ class MuJoCoReactorX200(ManipulatorArm):
                     position_limits=[-30, 60]  # -30 -> close, 60 -> open
                 )
 
+        class LeftFinger(Servo):
+            def __init__(self, controller, servo_id=5):
+                super().__init__(
+                    controller=controller,
+                    servo_id=servo_id, 
+                    pos_app_range=[-30, 60],    # deg
+                    vel_app_range=[0.229, 61],  # rpm
+                    tor_app_range=[-100, 100],  # %
+                    pos_sys_range=[0.015, 0.035],                             # m
+                    vel_sys_range=[0.229*0.015*np.pi/30, 61*0.015*np.pi/30],  # m/s (radius = 1.5 cm)
+                    tor_sys_range=[-8, 8],                                    # N (see the limits in the .xml file of the arm)
+                    #pos_limits=[-30, 60]  # -30 -> close, 60 -> open
+                    position_limits=[-20, 50]  # a more conservative range
+                )
+
+        class RightFinger(Servo):
+            def __init__(self, controller, servo_id=6):
+                super().__init__(
+                    controller=controller,
+                    servo_id=servo_id, 
+                    pos_app_range=[-30, 60],    # deg
+                    vel_app_range=[0.229, 61],  # rpm
+                    tor_app_range=[-100, 100],  # %
+                    pos_sys_range=[0.015, 0.035],                             # m
+                    vel_sys_range=[0.229*0.015*np.pi/30, 61*0.015*np.pi/30],  # m/s (radius = 1.5 cm)
+                    tor_sys_range=[-8, 8],                                    # N (see the limits in the .xml file of the arm)
+                    #pos_limits=[-30, 60]  # -30 -> close, 60 -> open
+                    position_limits=[-20, 50]  # a more conservative range
+                )
+
         self.controller = MuJoCoController(self.device_name)
         self.joints = {
                 Joint.Waist: ( Waist(self.controller), ), # tuple of 1 servo (IMPORTANT: comma at the end)
@@ -107,7 +137,7 @@ class MuJoCoReactorX200(ManipulatorArm):
                 Joint.Elbow: ( Elbow(self.controller), ),
                 Joint.WristAngle: ( WristAngle(self.controller), ),
                 Joint.WristRotation: ( WristRotation(self.controller), ),
-                Joint.Gripper: ( Gripper(self.controller), )
+                Joint.Gripper: ( LeftFinger(self.controller), RightFinger(self.controller) )
         }
 
 if __name__ == '__main__':
@@ -154,6 +184,14 @@ if __name__ == '__main__':
 
             robot.move_joint_to_home(joint)
 
+        # joint = Joint.WristRotation
+        # for pos in range(-30, 31, 10):
+        #     print(f'Setting joint {joint} to {pos} degrees')
+        #     robot.set_joint_position(joint, pos)
+        #     print_joint_status(joint, 3, 10)
+        # robot.move_joint_to_home(joint)
+        # time.sleep(5)
+
         joint = Joint.Gripper
         pos_limits = robot.get_joint_position_limits(joint)
         print('\nOpening gripper...')
@@ -170,7 +208,7 @@ if __name__ == '__main__':
 
     try:
         #test_joints(10) # test with 10 rpm
-        test_joints(20) # test with 20 rpm
+        test_joints(5) # test with 20 rpm
 
     except Exception as e:
         print(f'Error: {e}')

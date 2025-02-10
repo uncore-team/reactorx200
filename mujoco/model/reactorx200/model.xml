@@ -35,7 +35,7 @@
 
       <default class="shoulder">
         <joint axis="0 1 0" range="-1.88496 1.97222" actuatorfrcrange="-18 18"/>
-        <position kp="900" kv="15" inheritrange="1" forcerange="-18 18"/>
+        <position kp="1000" kv="15" inheritrange="1" forcerange="-18 18"/>
       </default>
 
       <default class="elbow">
@@ -58,7 +58,7 @@
         <joint axis="1 0 0" actuatorfrcrange="-1 1"/>
       </default>
       -->
-
+<!--
       <default class="finger">
         <joint type="slide" axis="0 1 0" actuatorfrcrange="-5 5"/>
         <position kp="600" kv="6" inheritrange="1" forcerange="-5 5"/>
@@ -68,6 +68,16 @@
         <default class="right_finger">
           <joint range="-0.037 -0.015"/>
         </default>
+      </default>
+-->
+      <default class="left_finger">
+        <joint type="slide" axis="0 1 0" range="0.015 0.037" actuatorfrcrange="-5 5"/>
+        <position kp="600" kv="6" inheritrange="1" forcerange="-5 5"/>
+      </default>
+
+      <default class="right_finger">
+        <joint type="slide" axis="0 -1 0" range="0.015 0.037" actuatorfrcrange="-5 5"/>
+        <position kp="600" kv="6" inheritrange="1" forcerange="-5 5"/>
       </default>
 
       <default class="visual">
@@ -175,13 +185,13 @@
   <contact>
     <exclude body1="rx200/base_link" body2="rx200/shoulder_link"/>
   </contact>
-
+<!--
   <equality>
     <joint joint1="left_finger" joint2="right_finger" polycoef="0 -1 0 0 0"/>
   </equality>
-
+-->
   <keyframe>
-    <key name="home" qpos="0 0 0 0 0 0.015 -0.015" ctrl="0 0 0 0 0 0.015"/>
+    <key name="home" qpos="0 0 0 0 0 0.015 0.015" ctrl="0 0 0 0 0 0.015 0.015"/>
   </keyframe>
 
   <actuator>
@@ -191,6 +201,7 @@
     <position class="wrist_angle" joint="wrist_angle"/>
     <position class="wrist_rotate" joint="wrist_rotate"/>
     <position class="left_finger" joint="left_finger"/>
+    <position class="right_finger" joint="right_finger"/>
   </actuator>
 
   <sensor>
