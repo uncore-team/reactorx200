@@ -272,7 +272,7 @@ class ReactorX200:
 if __name__ == '__main__':
     robot = ReactorX200(
             device_name='COM5',
-            exec_type=ExecutionType.Simulated
+            exec_type=ExecutionType.DigitalTwin
         )
 
     print('Starting simulation...')
@@ -303,18 +303,22 @@ if __name__ == '__main__':
         robot.set_joints_velocities([velocity] * robot.get_joints_number())
         robot.enable_joints_torques()
 
+        robot.move_joints_to_home()
+        print(f'\nHoming.....')
+        time.sleep(3)
+
         print(f'\nTesting all joints with velocity {velocity} RPM')
 
-        for joint in Joint:
-            if joint is Joint.Gripper:
-                continue
+        # for joint in Joint:
+        #     if joint is Joint.Gripper:
+        #         continue
 
-            for pos in range(-30, 31, 10):
-                print(f'Setting joint {joint} to {pos} degrees')
-                robot.set_joint_position(joint, pos)
-                print_joint_status(joint, 3, 10)
+        #     for pos in range(-30, 31, 10):
+        #         print(f'Setting joint {joint} to {pos} degrees')
+        #         robot.set_joint_position(joint, pos)
+        #         print_joint_status(joint, 3, 10)
 
-            robot.move_joint_to_home(joint)
+        #     robot.move_joint_to_home(joint)
 
         # joint = Joint.Shoulder
         # for pos in range(-30, 31, 10):
@@ -336,10 +340,10 @@ if __name__ == '__main__':
         print_joint_status(joint, 3, 10)
         print('Gripper closed.')
 
-        robot.disable_joints_torques()
+        # robot.disable_joints_torques()
 
     try:
-        test_joints(5) # test with 5 rpm
+        test_joints(10) # test with 10 rpm
         # test_joints(10) # test with 20 rpm
 
     except Exception as e:
