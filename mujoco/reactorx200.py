@@ -272,7 +272,7 @@ class ReactorX200:
 if __name__ == '__main__':
     robot = ReactorX200(
             device_name='COM5',
-            exec_type=ExecutionType.DigitalTwin
+            exec_type=ExecutionType.Simulated
         )
 
     print('Starting simulation...')
@@ -309,24 +309,24 @@ if __name__ == '__main__':
 
         print(f'\nTesting all joints with velocity {velocity} RPM')
 
-        # for joint in Joint:
-        #     if joint is Joint.Gripper:
-        #         continue
+        for joint in Joint:
+            if joint is Joint.Gripper:
+                continue
 
-        #     for pos in range(-30, 31, 10):
-        #         print(f'Setting joint {joint} to {pos} degrees')
-        #         robot.set_joint_position(joint, pos)
-        #         print_joint_status(joint, 3, 10)
+            for pos in range(-30, 31, 10):
+                print(f'Setting joint {joint} to {pos} degrees')
+                robot.set_joint_position(joint, pos)
+                print_joint_status(joint, 3, 10)
 
-        #     robot.move_joint_to_home(joint)
+            robot.move_joint_to_home(joint)
 
-        # joint = Joint.Shoulder
-        # for pos in range(-30, 31, 10):
-        #     print(f'Setting joint {joint} to {pos} degrees')
-        #     robot.set_joint_position(joint, pos)
-        #     print_joint_status(joint, 3, 10)
-        # robot.move_joint_to_home(joint)
-        # time.sleep(5)
+        joint = Joint.Shoulder
+        for pos in range(-30, 31, 10):
+            print(f'Setting joint {joint} to {pos} degrees')
+            robot.set_joint_position(joint, pos)
+            print_joint_status(joint, 3, 10)
+        robot.move_joint_to_home(joint)
+        time.sleep(5)
 
         joint = Joint.Gripper
         pos_limits = robot.get_joint_position_limits(joint)
