@@ -1,0 +1,3 @@
+KNOWN BUGS:
+
+Some inconsistencies with the actual servos' speeds. It needs more work.

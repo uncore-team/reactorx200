@@ -41,4 +41,3 @@ if __name__ == "__main__":
 
     # Ejecutar la función principal
     add_unique_names(args.input_file, args.output_file)
-
