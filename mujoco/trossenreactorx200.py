@@ -130,7 +130,7 @@ class TrossenReactorX200(ManipulatorArm):
         }
 
 if __name__ == '__main__':
-    robot = TrossenReactorX200()
+    robot = TrossenReactorX200(device_name='COM3')
 
     print('Starting simulation...')
 
