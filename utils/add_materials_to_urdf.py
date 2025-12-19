@@ -13,10 +13,10 @@ def extract_materials_from_urdf(urdf_file):
         name = material.attrib.get("name")
         texture = material.find("texture")
         color = material.find("color")
-        
+
         texture_file = texture.attrib["filename"] if texture is not None else None
         rgba = color.attrib["rgba"] if color is not None else None
-        
+
         materials[name] = {
             "texture": texture_file,
             "color": rgba
@@ -54,8 +54,8 @@ def modify_mjcf_with_materials(mjcf_file, materials, urdf_file, output_file):
         if properties.get("texture") or properties.get("color"):
             if properties.get("texture"):
                 ET.SubElement(
-                    asset_section, 
-                    "texture", 
+                    asset_section,
+                    "texture",
                     name=f"{material_name}_texture",
                     file=properties["texture"]
                 )
@@ -85,16 +85,15 @@ def main():
     parser.add_argument("-u", "--urdf", required=True, help="Ruta al archivo URDF de entrada.")
     parser.add_argument("-m", "--mjcf", required=True, help="Ruta al archivo MJCF original.")
     parser.add_argument("-o", "--output", required=True, help="Ruta al archivo MJCF de salida.")
-    
+
     args = parser.parse_args()
 
     # Extraer materiales del URDF
     materials = extract_materials_from_urdf(args.urdf)
-    
+
     # Modificar el MJCF con los materiales extraídos
     modify_mjcf_with_materials(args.mjcf, materials, args.urdf, args.output)
     print(f"Archivo MJCF actualizado guardado en {args.output}")
 
 if __name__ == "__main__":
     main()
-
